@@ -1,0 +1,22 @@
+api_version = "2025-07"
+
+[[extensions]]
+name = "t:name"
+handle = "custom-cart-transform-extension"
+type = "function"
+uid = "fe66ce58-f8ec-c926-6830-a7fc02d94aad590b767e"
+description = "t:description"
+
+  [[extensions.targeting]]
+  target = "cart.transform.run"
+  input_query = "src/cart_transform_run.graphql"
+  export = "cart_transform_run"
+
+  [extensions.build]
+  command = "cargo build --target=wasm32-unknown-unknown --release"
+  path = "target/wasm32-unknown-unknown/release/custom-cart-transform-extension.wasm"
+  watch = [ "src/**/*.rs" ]
+
+  [extensions.ui.paths]
+  create = "/"
+  details = "/"
