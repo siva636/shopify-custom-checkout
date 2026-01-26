@@ -5,8 +5,10 @@ pub mod cart_transform_run;
 
 #[typegen("schema.graphql")]
 pub mod schema {
-    #[query("src/cart_transform_run.graphql")]
-    pub mod cart_transform_run {}
+    #[query("src/cart_transform_run.graphql", custom_scalar_overrides = {
+        "Input.cart.lines.merchandise.component_reference.jsonValue" => super::cart_transform_run::ComponentReferences,
+    })]
+    pub mod run {}
 }
 
 fn main() {
