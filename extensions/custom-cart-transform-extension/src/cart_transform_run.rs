@@ -47,6 +47,7 @@ fn get_expand_cart_operations(cart: &schema::run::input::Cart) -> Vec<schema::Op
         expand_relationships.push(expand_relationship);
       }
 
+      // NOTE: type is LineExpandOperation, variant is Operation::LineExpand
       let expand_operation = schema::LineExpandOperation {
         cart_line_id: line.id().clone(),
         expanded_cart_items: expand_relationships,
@@ -55,11 +56,11 @@ fn get_expand_cart_operations(cart: &schema::run::input::Cart) -> Vec<schema::Op
         title: None,
       };
 
-      result.push(schema::CartOperation::Expand(expand_operation));
+      result.push(schema::Operation::LineExpand(expand_operation));
     }
   }
 
-  return result;
+  result
 }
 
 pub type ComponentReferences = Vec<schema::Id>;
@@ -71,5 +72,5 @@ fn get_component_references(
     return component_reference_metafield.json_value().into();
   }
 
-  return Vec::new().into();
+  Vec::new().into()
 }
