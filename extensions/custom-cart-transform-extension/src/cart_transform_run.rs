@@ -5,7 +5,7 @@ use shopify_function::prelude::*;
 use shopify_function::Result;
 
 #[shopify_function]
-fn run(input: schema::run::Input) -> Result<schema::CartTransformRunResult> {
+fn cart_transform_run(input: schema::run::Input) -> Result<schema::CartTransformRunResult> {
   let cart_operations: Vec<schema::Operation> = get_expand_cart_operations(&input.cart());
 
   Ok(schema::CartTransformRunResult {
