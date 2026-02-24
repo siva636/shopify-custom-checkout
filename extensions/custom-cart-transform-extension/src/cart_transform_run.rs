@@ -67,7 +67,7 @@ pub type ComponentReferences = Vec<schema::Id>;
 
 fn get_component_references(
   variant: &schema::run::input::cart::lines::merchandise::ProductVariant,
-) -> Cow<[schema::Id]> {
+) -> Cow<'_, [schema::Id]> {
   if let Some(component_reference_metafield) = &variant.component_reference() {
     return component_reference_metafield.json_value().into();
   }
