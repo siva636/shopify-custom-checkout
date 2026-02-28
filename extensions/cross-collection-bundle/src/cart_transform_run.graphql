@@ -1,8 +1,24 @@
-query CartTransformRunInput {
+query Input {
   cart {
     lines {
       id
       quantity
+      cost {
+        amountPerQuantity {
+          amount
+        }
+      }
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          id
+          product {
+            # Identify whether this product belongs to “Premium” or “Featured” collections by checking for the presence of specific tags.
+            inPremiumCollection: hasAnyTag(tags: ["premium"])
+            inFeaturedCollection: hasAnyTag(tags: ["featured"])
+          }
+        }
+      }
     }
   }
 }
