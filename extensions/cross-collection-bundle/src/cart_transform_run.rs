@@ -8,7 +8,6 @@ const DISCOUNT_PERCENTAGE: f64 = 25.0;
 fn cart_transform_run(
     input: schema::cart_transform_run::Input,
 ) -> Result<schema::CartTransformRunResult> {
-
     let cart = input.cart();
 
     // First pass: determine if we have at least one premium and one featured item
@@ -16,8 +15,9 @@ fn cart_transform_run(
     let mut has_featured = false;
 
     for line in cart.lines().iter() {
-        if let schema::cart_transform_run::input::cart::lines::Merchandise::ProductVariant(variant) =
-            &line.merchandise()
+        if let schema::cart_transform_run::input::cart::lines::Merchandise::ProductVariant(
+            variant,
+        ) = &line.merchandise()
         {
             let product = variant.product();
             if *product.in_premium_collection() {
@@ -31,9 +31,7 @@ fn cart_transform_run(
 
     // If we don't have at least one of each, don't apply any discount
     if !has_premium || !has_featured {
-        return Ok(schema::CartTransformRunResult {
-            operations: vec![],
-        });
+        return Ok(schema::CartTransformRunResult { operations: vec![] });
     }
 
     // Both sets are present: build lineUpdate operations
@@ -51,17 +49,14 @@ fn cart_transform_run(
 
         let is_premium = *product.in_premium_collection();
         let is_featured = *product.in_featured_collection();
+        let original_title = product.title();
 
         if !is_premium && !is_featured {
             continue;
         }
 
         // Current unit price in presentment currency
-        let current_amount = line
-            .cost()
-            .amount_per_quantity()
-            .amount()
-            .0; // Decimal(f64) -> get f64
+        let current_amount = line.cost().amount_per_quantity().amount().0; // Decimal(f64) -> get f64
 
         // Apply percentage discount
         let discounted_amount = current_amount * discount_factor;
@@ -72,18 +67,17 @@ fn cart_transform_run(
         }
 
         let price_adjustment = schema::LineUpdateOperationPriceAdjustment {
-            adjustment:
-                schema::LineUpdateOperationPriceAdjustmentValue::FixedPricePerUnit(
-                    schema::LineUpdateOperationFixedPricePerUnitAdjustment {
-                        amount: Decimal::from(discounted_amount),
-                    },
-                ),
+            adjustment: schema::LineUpdateOperationPriceAdjustmentValue::FixedPricePerUnit(
+                schema::LineUpdateOperationFixedPricePerUnitAdjustment {
+                    amount: Decimal::from(discounted_amount),
+                },
+            ),
         };
 
         let op = schema::LineUpdateOperation {
             cart_line_id: line.id().clone(),
             image: None,
-            title: None,
+            title: Some(format!("{} (***{}% OFF***)", original_title, DISCOUNT_PERCENTAGE)),
             price: Some(price_adjustment),
         };
 
@@ -92,4 +86,3 @@ fn cart_transform_run(
 
     Ok(schema::CartTransformRunResult { operations })
 }
-
