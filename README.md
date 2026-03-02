@@ -1,8 +1,6 @@
-# Shopify Plus Rust based Functions
+# Shopify Plus custom checkout with Rust Functions
 
-## This project demonstrates a high performant custom Pick & Match technique using Rust based Shopify Functions.
+### This project demonstrates a high performant custom Pick & Match technique on a Shopify Plus storefront using Rust based Shopify Functions.
 
-[DEMO](https://siva636-custom-checkout.myshopify.com/)
-
-## (Password: 123)
+[DEMO](https://siva636-custom-checkout.myshopify.com/) (Password: 123)
 
