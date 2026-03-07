@@ -1,0 +1,23 @@
+api_version = "2026-01"
+
+[[extensions]]
+name = "t:name"
+handle = "cross-collection-discount"
+type = "function"
+uid = "6a64f16c-4b90-ccba-8c97-591903a70a6a1e38e6e9"
+description = "t:description"
+
+  [[extensions.targeting]]
+  target = "cart.lines.discounts.generate.run"
+  input_query = "src/cart_lines_discounts_generate_run.graphql"
+  export = "cart_lines_discounts_generate_run"
+
+  [[extensions.targeting]]
+  target = "cart.delivery-options.discounts.generate.run"
+  input_query = "src/cart_delivery_options_discounts_generate_run.graphql"
+  export = "cart_delivery_options_discounts_generate_run"
+
+  [extensions.build]
+  command = "cargo build --target=wasm32-unknown-unknown --release"
+  path = "target/wasm32-unknown-unknown/release/cross-collection-discount.wasm"
+  watch = [ "src/**/*.rs" ]
