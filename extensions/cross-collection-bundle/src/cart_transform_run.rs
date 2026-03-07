@@ -3,6 +3,7 @@ use shopify_function::prelude::*;
 use shopify_function::Result;
 
 const DISCOUNT_PERCENTAGE: f64 = 25.0;
+const CROWN: &str = "👑";
 
 #[shopify_function]
 fn cart_transform_run(
@@ -77,8 +78,9 @@ fn cart_transform_run(
         let op = schema::LineUpdateOperation {
             cart_line_id: line.id().clone(),
             image: None,
-            title: Some(format!("{} (***{}% OFF***)", original_title, DISCOUNT_PERCENTAGE)),
-            price: Some(price_adjustment),
+            title: Some(format!("{} {}", CROWN, original_title)),
+            price: None,
+            // price: Some(price_adjustment),
         };
 
         operations.push(schema::Operation::LineUpdate(op));
