@@ -6,18 +6,55 @@ use shopify_function::Result;
 fn cart_lines_discounts_generate_run(
     input: schema::cart_lines_discounts_generate_run::Input,
 ) -> Result<schema::CartLinesDiscountsGenerateRunResult> {
-    let max_cart_line = input
-        .cart()
-        .lines()
-        .iter()
-        .max_by(|a, b| {
-            a.cost()
-                .subtotal_amount()
-                .amount()
-                .partial_cmp(b.cost().subtotal_amount().amount())
-                .unwrap_or(std::cmp::Ordering::Equal)
-        })
-        .ok_or("No cart lines found")?;
+    const DISCOUNT_PERCENTAGE: f64 = 25.0;
+    const DISCOUNT_MESSAGE: &str = "💎25% OFF";
+
+    let cart = input.cart();
+    let mut has_premium = false;
+    let mut has_featured = false;
+    let mut ops = vec![];
+
+    for line in cart.lines().iter() {
+        if let schema::cart_lines_discounts_generate_run::input::cart::lines::Merchandise::ProductVariant(
+            variant,
+        ) = &line.merchandise()
+        {
+            let product = variant.product();
+            if *product.in_premium_collection() {
+                has_premium = true;
+            }
+            if *product.in_featured_collection() {
+                has_featured = true;
+            }
+        }
+    }
+
+    if !has_premium || !has_featured {
+        return Ok(schema::CartLinesDiscountsGenerateRunResult { operations: vec![] });
+    }
+
+    for line in cart.lines().iter() {
+        let variant = match &line.merchandise() {
+            schema::cart_lines_discounts_generate_run::input::cart::lines::Merchandise::ProductVariant(v) => v,
+            _ => continue,
+        };
+
+        let product = variant.product();
+
+        let is_premium = *product.in_premium_collection();
+        let is_featured = *product.in_featured_collection();
+
+        if !is_premium && !is_featured {
+            continue;
+        }
+
+        let op = schema::ProductDiscountCandidateTarget::CartLine(schema::CartLineTarget {
+            id: line.id().clone(),
+            quantity: None,
+        });
+
+        ops.push(op);
+    }
 
     let has_order_discount_class = input
         .discount()
@@ -34,43 +71,16 @@ fn cart_lines_discounts_generate_run(
 
     let mut operations = vec![];
 
-    // Check if the discount has the ORDER class
-    if has_order_discount_class {
-        operations.push(schema::CartOperation::OrderDiscountsAdd(
-            schema::OrderDiscountsAddOperation {
-                selection_strategy: schema::OrderDiscountSelectionStrategy::First,
-                candidates: vec![schema::OrderDiscountCandidate {
-                    targets: vec![schema::OrderDiscountCandidateTarget::OrderSubtotal(
-                        schema::OrderSubtotalTarget {
-                            excluded_cart_line_ids: vec![],
-                        },
-                    )],
-                    message: Some("10% OFF ORDER".to_string()),
-                    value: schema::OrderDiscountCandidateValue::Percentage(schema::Percentage {
-                        value: Decimal(10.0),
-                    }),
-                    conditions: None,
-                    associated_discount_code: None,
-                }],
-            },
-        ));
-    }
-
     // Check if the discount has the PRODUCT class
     if has_product_discount_class {
         operations.push(schema::CartOperation::ProductDiscountsAdd(
             schema::ProductDiscountsAddOperation {
                 selection_strategy: schema::ProductDiscountSelectionStrategy::First,
                 candidates: vec![schema::ProductDiscountCandidate {
-                    targets: vec![schema::ProductDiscountCandidateTarget::CartLine(
-                        schema::CartLineTarget {
-                            id: max_cart_line.id().clone(),
-                            quantity: None,
-                        },
-                    )],
-                    message: Some("20% OFF PRODUCT".to_string()),
+                    targets: ops,
+                    message: Some(DISCOUNT_MESSAGE.to_string()),
                     value: schema::ProductDiscountCandidateValue::Percentage(schema::Percentage {
-                        value: Decimal(20.0),
+                        value: Decimal(DISCOUNT_PERCENTAGE),
                     }),
                     associated_discount_code: None,
                 }],
