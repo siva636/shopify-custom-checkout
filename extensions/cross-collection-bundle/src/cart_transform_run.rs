@@ -3,7 +3,7 @@ use shopify_function::prelude::*;
 use shopify_function::Result;
 
 const DISCOUNT_PERCENTAGE: f64 = 25.0;
-const CROWN: &str = "👑";
+const HEART: &str = "💝";
 
 #[shopify_function]
 fn cart_transform_run(
@@ -67,18 +67,18 @@ fn cart_transform_run(
             continue;
         }
 
-        let price_adjustment = schema::LineUpdateOperationPriceAdjustment {
-            adjustment: schema::LineUpdateOperationPriceAdjustmentValue::FixedPricePerUnit(
-                schema::LineUpdateOperationFixedPricePerUnitAdjustment {
-                    amount: Decimal::from(discounted_amount),
-                },
-            ),
-        };
+        // let price_adjustment = schema::LineUpdateOperationPriceAdjustment {
+        //     adjustment: schema::LineUpdateOperationPriceAdjustmentValue::FixedPricePerUnit(
+        //         schema::LineUpdateOperationFixedPricePerUnitAdjustment {
+        //             amount: Decimal::from(discounted_amount),
+        //         },
+        //     ),
+        // };
 
         let op = schema::LineUpdateOperation {
             cart_line_id: line.id().clone(),
             image: None,
-            title: Some(format!("{} {}", CROWN, original_title)),
+            title: Some(format!("{} {}", HEART, original_title)),
             price: None,
             // price: Some(price_adjustment),
         };
