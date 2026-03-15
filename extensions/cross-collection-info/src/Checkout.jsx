@@ -1,58 +1,72 @@
-import '@shopify/ui-extensions/preact';
-import {render} from "preact";
+import "@shopify/ui-extensions/preact";
+import { render } from "preact";
+import { useEffect, useState } from "preact/hooks";
 
-// 1. Export the extension
-export default async () => {
-  render(<Extension />, document.body)
-};
+export default function extension() {
+  render(<Extension />, document.body);
+}
 
 function Extension() {
-  // 2. Check instructions for feature availability
-  if (!shopify.instructions.value.metafields.canSetCartMetafields) {
-    return (
-      <s-banner heading="cross-collection-info " tone="warning">
-        {shopify.i18n.translate("metafieldChangesAreNotSupported")}
-      </s-banner>
-    );
-  }
+  const { query, lines } = shopify;
+  const [data, setData] = useState();
+  let hasPremium = false;
+  let hasFeatured = false;
 
-  const freeGiftRequested = shopify.appMetafields.value.find(
-    (appMetafield) =>
-      appMetafield.target.type === "cart" &&
-      appMetafield.metafield.namespace === "$app" &&
-      appMetafield.metafield.key === "requestedFreeGift",
-  );
+  useEffect(() => {
+    const productIds = lines.value.map((line) => line.merchandise.product.id);
 
-  // 3. Render a UI
+    shopify
+      .query(
+        `query ProductTags($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on Product {
+              id
+              tags
+            }
+          }
+        }
+      `,
+        { variables: { ids: productIds } },
+      )
+      .then(({ data, errors }) => {
+        // console.log("data", data?.nodes);
+        return setData(data);
+      })
+      .catch(console.error);
+  }, [query, lines]);
+
+  data?.nodes.forEach((node) => {
+    if (node?.tags.includes("Premium") || node?.tags.includes("premium")) {
+      hasPremium = true;
+    }
+    if (node?.tags.includes("Featured") || node?.tags.includes("featured")) {
+      hasFeatured = true;
+    }
+  });
+
   return (
-    <s-banner heading="cross-collection-info ">
-      <s-stack gap="base">
-        <s-text>
-          {shopify.i18n.translate("welcome", {
-            target: <s-text type="emphasis">{shopify.extension.target}</s-text>,
-          })}
-        </s-text>
-        <s-checkbox
-          checked={freeGiftRequested?.metafield?.value === "true"}
-          onChange={onCheckboxChange}
-          label={shopify.i18n.translate("iWouldLikeAFreeGiftWithMyOrder")}
+    <>
+      {hasPremium && hasFeatured && (
+        <s-banner heading="Pick & Match offer applied" tone="success" />
+      )}
+      {!hasPremium && !hasFeatured && (
+        <s-banner
+          heading="Add at least one each from Premium and Featured collections to get Pick & Match offer"
+          tone="warning"
         />
-      </s-stack>
-    </s-banner>
+      )}
+      {hasPremium && !hasFeatured && (
+        <s-banner
+          heading="Add at least one Featured product to get Pick & Match offer"
+          tone="warning"
+        />
+      )}
+      {!hasPremium && hasFeatured && (
+        <s-banner
+          heading="Add at least one Premium product to get Pick & Match offer"
+          tone="warning"
+        />
+      )}
+    </>
   );
-
-  async function onCheckboxChange(event) {
-    const isChecked = event.target.checked;
-    // 4. Call the API to modify checkout
-    const result = await shopify.applyMetafieldChange({
-      type: "updateCartMetafield",
-      metafield: {
-        namespace: "$app",
-        key: "requestedFreeGift",
-        value: isChecked ? "true" : "false",
-        type: "boolean",
-      },
-    });
-    console.log("applyMetafieldChange result", result);
-  }
 }
